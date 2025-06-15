@@ -465,8 +465,9 @@
 
             // Check model status on page load
             fetch('/api/health')
-                .then(response => response.json())
+                .then(response => response.json()) 
                 .then(data => {
+                    console.log(data)
                     const statusElement = document.getElementById('modelStatus');
                     if (data.model_loaded) {
                         statusElement.textContent = '✅ AI Model Ready - Enter your health data for prediction';
