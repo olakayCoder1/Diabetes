@@ -861,10 +861,6 @@ class AdvancedDiabetesPredictor:
             print(f"Error loading model: {str(e)}")
 
 
-
-app = Flask(__name__)
-app.secret_key = 'your-secret-key-here'  # Change this in production
-
 # Global predictor instance
 predictor = None
 model_loaded = False
@@ -934,6 +930,12 @@ def load_or_train_model():
         print(f"❌ Error training model: {str(e)}")
         traceback.print_exc()
         return False
+
+
+app = Flask(__name__)
+app.secret_key = 'your-secret-key-here-098765443etrghjvcgdtu'  # Change this in production
+
+
 
 @app.route('/')
 def index():
@@ -1040,4 +1042,6 @@ if __name__ == '__main__':
     print("🛑 Press Ctrl+C to stop the server\n")
     
     app.run()
+
+    
     # app.run(debug=True, host='0.0.0.0', port=8000)
