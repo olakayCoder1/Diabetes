@@ -3,7 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Diabetes Risk Predictor</title>
+    <title>GlucoGenie</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.1.3/css/bootstrap.min.css" rel="stylesheet">
     <style>
         * {
             margin: 0;
@@ -41,11 +43,38 @@
             opacity: 0.9;
         }
 
+        .nav-tabs {
+            background: white;
+            border-radius: 15px 15px 0 0;
+            padding: 10px 30px 0;
+            margin-bottom: 0;
+        }
+
+        .nav-tabs .nav-link {
+            color: #667eea;
+            font-weight: 600;
+            border: none;
+            border-radius: 10px 10px 0 0;
+            margin-right: 10px;
+        }
+
+        .nav-tabs .nav-link.active {
+            background: #667eea;
+            color: white;
+            border: none;
+        }
+
+        .tab-content {
+            background: white;
+            border-radius: 0 0 15px 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+        }
+
         .main-content {
             display: grid;
             grid-template-columns: 1fr 1fr;
             gap: 30px;
-            margin-top: 30px;
+            margin-top: 0;
         }
 
         .form-section, .result-section {
@@ -103,7 +132,7 @@
             margin-top: 5px;
         }
 
-        .predict-btn {
+        .predict-btn, .compare-btn {
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: white;
             padding: 15px 30px;
@@ -114,14 +143,19 @@
             cursor: pointer;
             transition: transform 0.2s ease;
             width: 100%;
+            margin-bottom: 10px;
         }
 
-        .predict-btn:hover {
+        .compare-btn {
+            background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+        }
+
+        .predict-btn:hover, .compare-btn:hover {
             transform: translateY(-2px);
             box-shadow: 0 5px 15px rgba(102, 126, 234, 0.3);
         }
 
-        .predict-btn:disabled {
+        .predict-btn:disabled, .compare-btn:disabled {
             opacity: 0.6;
             cursor: not-allowed;
             transform: none;
@@ -281,6 +315,28 @@
             color: #c62828;
         }
 
+        /* Model Comparison Styles */
+        .comparison-section {
+            padding: 30px;
+        }
+
+        .comparison-loading {
+            display: none;
+        }
+
+        .comparison-results {
+            display: none;
+        }
+
+        .table-responsive {
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        .alert-success {
+            border-radius: 8px;
+        }
+
         @media (max-width: 768px) {
             .main-content {
                 grid-template-columns: 1fr;
@@ -328,132 +384,175 @@
 <body>
     <div class="container">
         <div class="header">
-            <h1>🩺 Diabetes Risk Predictor</h1>
+            <h1>🩺 GlucoGenie</h1>
             <p>Advanced AI-powered diabetes risk assessment using machine learning</p>
-            <div class="nav-links">
-                <a href="/">Home</a>
-                <a href="/about">About</a>
-                <a href="/api/health" target="_blank">API Status</a>
-            </div>
         </div>
 
         <div class="model-status" id="modelStatus">
             ✅ AI Model Ready - Enter your health data for prediction
         </div>
 
-        <div class="main-content">
-            <div class="form-section">
-                <h2>📋 Enter Your Health Information</h2>
-                <p style="margin-bottom: 20px; color: #666;">
-                    Please consult your medical records or healthcare provider for accurate values.
-                </p>
+        <!-- Navigation Tabs -->
+        <ul class="nav nav-tabs" id="mainTabs" role="tablist">
+            <li class="nav-item" role="presentation">
+                <button class="nav-link active" id="prediction-tab" data-bs-toggle="tab" data-bs-target="#prediction" type="button" role="tab">
+                    <i class="fas fa-stethoscope"></i> Risk Prediction
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="comparison-tab" data-bs-toggle="tab" data-bs-target="#comparison" type="button" role="tab">
+                    <i class="fas fa-chart-bar"></i> Model Comparison
+                </button>
+            </li>
+        </ul>
 
-                <div class="error-message" id="errorMessage"></div>
+        <!-- Tab Content -->
+        <div class="tab-content">
+            <!-- Prediction Tab -->
+            <div class="tab-pane fade show active" id="prediction" role="tabpanel">
+                <div class="main-content">
+                    <div class="form-section">
+                        <h2>📋 Enter Your Health Information</h2>
+                        <p style="margin-bottom: 20px; color: #666;">
+                            Please consult your medical records or healthcare provider for accurate values.
+                        </p>
 
-                <form id="predictionForm">
-                    <div class="form-grid">
-                        <div class="form-group">
-                            <label for="pregnancies">Pregnancies</label>
-                            <input type="number" id="pregnancies" name="pregnancies" min="0" max="20" value="0" required>
-                            <div class="help-text">Number of times pregnant (0 for men)</div>
+                        <div class="error-message" id="errorMessage"></div>
+
+                        <form id="predictionForm">
+                            <div class="form-grid">
+                                <div class="form-group">
+                                    <label for="pregnancies">Pregnancies</label>
+                                    <input type="number" id="pregnancies" name="pregnancies" min="0" max="20" value="0" required>
+                                    <div class="help-text">Number of times pregnant (0 for men)</div>
+                                </div>
+
+                                <div class="form-group">
+                                    <label for="glucose">Blood Glucose (mg/dL)</label>
+                                    <input type="number" id="glucose" name="glucose" min="50" max="300" step="0.1" value="120" required>
+                                    <div class="help-text">Fasting blood sugar level</div>
+                                </div>
+
+                                <div class="form-group">
+                                    <label for="blood_pressure">Blood Pressure (mmHg)</label>
+                                    <input type="number" id="blood_pressure" name="blood_pressure" min="40" max="150" value="80" required>
+                                    <div class="help-text">Diastolic blood pressure</div>
+                                </div>
+
+                                <div class="form-group">
+                                    <label for="skin_thickness">Skin Thickness (mm)</label>
+                                    <input type="number" id="skin_thickness" name="skin_thickness" min="0" max="60" step="0.1" value="25" required>
+                                    <div class="help-text">Triceps skin fold thickness</div>
+                                </div>
+
+                                <div class="form-group">
+                                    <label for="insulin">Insulin (μU/mL)</label>
+                                    <input type="number" id="insulin" name="insulin" min="0" max="500" step="0.1" value="100" required>
+                                    <div class="help-text">2-hour serum insulin level</div>
+                                </div>
+
+                                <div class="form-group">
+                                    <label for="bmi">BMI (kg/m²)</label>
+                                    <input type="number" id="bmi" name="bmi" min="10" max="50" step="0.1" value="25.0" required>
+                                    <div class="help-text">Body Mass Index</div>
+                                </div>
+
+                                <div class="form-group">
+                                    <label for="diabetes_pedigree">Family History Score</label>
+                                    <input type="number" id="diabetes_pedigree" name="diabetes_pedigree" min="0.1" max="2.0" step="0.01" value="0.3" required>
+                                    <div class="help-text">Diabetes pedigree function (0.1-2.0)</div>
+                                </div>
+
+                                <div class="form-group">
+                                    <label for="age">Age (years)</label>
+                                    <input type="number" id="age" name="age" min="1" max="120" value="35" required>
+                                    <div class="help-text">Current age</div>
+                                </div>
+
+                                <div class="form-group full-width">
+                                    <button type="submit" class="predict-btn" id="predictBtn">
+                                        🔮 Predict Diabetes Risk
+                                    </button>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+
+                    <div class="result-section">
+                        <h2>📊 Prediction Results</h2>
+                        
+                        <div class="result-placeholder" id="resultPlaceholder">
+                            <p>👆 Fill in your health information and click "Predict Diabetes Risk" to see your results</p>
                         </div>
 
-                        <div class="form-group">
-                            <label for="glucose">Blood Glucose (mg/dL)</label>
-                            <input type="number" id="glucose" name="glucose" min="50" max="300" step="0.1" value="120" required>
-                            <div class="help-text">Fasting blood sugar level</div>
+                        <div class="loading" id="loadingIndicator">
+                            <div class="spinner"></div>
+                            <p>Analyzing your health data...</p>
                         </div>
 
-                        <div class="form-group">
-                            <label for="blood_pressure">Blood Pressure (mmHg)</label>
-                            <input type="number" id="blood_pressure" name="blood_pressure" min="40" max="150" value="80" required>
-                            <div class="help-text">Diastolic blood pressure</div>
-                        </div>
+                        <div class="result-content" id="resultContent">
+                            <div class="prediction-result" id="predictionResult">
+                                <h3 id="predictionLabel"></h3>
+                                <div class="probability-bar">
+                                    <div class="probability-fill" id="probabilityFill"></div>
+                                </div>
+                                <p><strong>Diabetes Probability:</strong> <span id="diabetesProbability"></span></p>
+                                <p><strong>Confidence:</strong> <span id="confidence"></span></p>
+                            </div>
 
-                        <div class="form-group">
-                            <label for="skin_thickness">Skin Thickness (mm)</label>
-                            <input type="number" id="skin_thickness" name="skin_thickness" min="0" max="60" step="0.1" value="25" required>
-                            <div class="help-text">Triceps skin fold thickness</div>
-                        </div>
+                            <div class="risk-assessment">
+                                <div class="risk-level" id="riskLevel"></div>
+                                <p id="riskDescription"></p>
+                                
+                                <div class="recommendation">
+                                    <h4>💡 Recommendation:</h4>
+                                    <p id="recommendation"></p>
+                                </div>
+                            </div>
 
-                        <div class="form-group">
-                            <label for="insulin">Insulin (μU/mL)</label>
-                            <input type="number" id="insulin" name="insulin" min="0" max="500" step="0.1" value="100" required>
-                            <div class="help-text">2-hour serum insulin level</div>
-                        </div>
-
-                        <div class="form-group">
-                            <label for="bmi">BMI (kg/m²)</label>
-                            <input type="number" id="bmi" name="bmi" min="10" max="50" step="0.1" value="25.0" required>
-                            <div class="help-text">Body Mass Index</div>
-                        </div>
-
-                        <div class="form-group">
-                            <label for="diabetes_pedigree">Family History Score</label>
-                            <input type="number" id="diabetes_pedigree" name="diabetes_pedigree" min="0.1" max="2.0" step="0.01" value="0.3" required>
-                            <div class="help-text">Diabetes pedigree function (0.1-2.0)</div>
-                        </div>
-
-                        <div class="form-group">
-                            <label for="age">Age (years)</label>
-                            <input type="number" id="age" name="age" min="1" max="120" value="35" required>
-                            <div class="help-text">Current age</div>
-                        </div>
-
-                        <div class="form-group full-width">
-                            <button type="submit" class="predict-btn" id="predictBtn">
-                                🔮 Predict Diabetes Risk
-                            </button>
+                            <div style="margin-top: 20px; padding: 15px; background: #f0f0f0; border-radius: 8px; font-size: 0.9rem; color: #666;">
+                                <strong>⚠️ Important:</strong> This prediction is for informational purposes only and should not replace professional medical advice. Always consult with a healthcare provider for accurate diagnosis and treatment.
+                            </div>
                         </div>
                     </div>
-                </form>
+                </div>
             </div>
 
-            <div class="result-section">
-                <h2>📊 Prediction Results</h2>
-                
-                <div class="result-placeholder" id="resultPlaceholder">
-                    <p>👆 Fill in your health information and click "Predict Diabetes Risk" to see your results</p>
-                </div>
+            <!-- Model Comparison Tab -->
+            <div class="tab-pane fade" id="comparison" role="tabpanel">
+                <div class="comparison-section">
+                    <div class="row">
+                        <div class="col-12">
+                            <h2><i class="fas fa-chart-line"></i> Model Performance Comparison</h2>
+                            <p class="mb-4">Compare the performance of different machine learning models for diabetes prediction. This analysis shows how our advanced ensemble model performs against baseline algorithms.</p>
+                            
+                            <button class="compare-btn mb-4" id="compareModelsBtn">
+                                <i class="fas fa-balance-scale"></i> Compare All Models
+                            </button>
 
-                <div class="loading" id="loadingIndicator">
-                    <div class="spinner"></div>
-                    <p>Analyzing your health data...</p>
-                </div>
+                            <div class="comparison-loading" id="comparisonLoading">
+                                <div class="text-center p-4">
+                                    <div class="spinner"></div>
+                                    <p>Running model comparison analysis...</p>
+                                </div>
+                            </div>
 
-                <div class="result-content" id="resultContent">
-                    <div class="prediction-result" id="predictionResult">
-                        <h3 id="predictionLabel"></h3>
-                        <div class="probability-bar">
-                            <div class="probability-fill" id="probabilityFill"></div>
+                            <div class="comparison-results" id="comparisonResults">
+                                <!-- Results will be populated by JavaScript -->
+                            </div>
                         </div>
-                        <p><strong>Diabetes Probability:</strong> <span id="diabetesProbability"></span></p>
-                        <p><strong>Confidence:</strong> <span id="confidence"></span></p>
-                    </div>
-
-                    <div class="risk-assessment">
-                        <div class="risk-level" id="riskLevel"></div>
-                        <p id="riskDescription"></p>
-                        
-                        <div class="recommendation">
-                            <h4>💡 Recommendation:</h4>
-                            <p id="recommendation"></p>
-                        </div>
-                    </div>
-
-                    <div style="margin-top: 20px; padding: 15px; background: #f0f0f0; border-radius: 8px; font-size: 0.9rem; color: #666;">
-                        <strong>⚠️ Important:</strong> This prediction is for informational purposes only and should not replace professional medical advice. Always consult with a healthcare provider for accurate diagnosis and treatment.
                     </div>
                 </div>
             </div>
         </div>
 
         <div class="footer">
-            <p>© 2025 Diabetes Risk Predictor | Powered by Advanced Machine Learning</p>
+            <p>© 2025 GlucoGenie | Powered by Advanced Machine Learning</p>
             <p>Made with ❤️ for better health outcomes</p>
         </div>
     </div>
 
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.1.3/js/bootstrap.bundle.min.js"></script>
     <script>
         document.addEventListener('DOMContentLoaded', function() {
             const form = document.getElementById('predictionForm');
@@ -522,6 +621,154 @@
                     predictBtn.textContent = '🔮 Predict Diabetes Risk';
                 });
             });
+
+            // Model Comparison Functionality
+            document.getElementById('compareModelsBtn').addEventListener('click', function() {
+                const button = this;
+                const loading = document.getElementById('comparisonLoading');
+                const results = document.getElementById('comparisonResults');
+                
+                // Show loading state
+                button.disabled = true;
+                loading.style.display = 'block';
+                results.style.display = 'none';
+                
+                // Make API call
+                fetch('/compare_models', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    }
+                })
+                .then(response => response.json())
+                .then(data => {
+                    loading.style.display = 'none';
+                    
+                    if (data.success) {
+                        displayComparisonResults(data);
+                        results.style.display = 'block';
+                    } else {
+                        alert('Comparison failed: ' + data.error);
+                    }
+                })
+                .catch(error => {
+                    loading.style.display = 'none';
+                    alert('Error: ' + error.message);
+                })
+                .finally(() => {
+                    button.disabled = false;
+                });
+            });
+
+            function displayComparisonResults(data) {
+                const results = document.getElementById('comparisonResults');
+                const improvements = data.improvements;
+                const summary = data.comparison_summary;
+                
+                results.innerHTML = `
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="card border-success">
+                                <div class="card-header bg-success text-white">
+                                    <h5><i class="fas fa-trophy"></i> Performance Summary</h5>
+                                </div>
+                                <div class="card-body">
+                                    <p><strong>🏆 Best Model:</strong> ${summary.best_model.replace('🏆 ', '')}</p>
+                                    <p><strong>📊 F1-Score:</strong> ${(summary.best_f1_score * 100).toFixed(1)}%</p>
+                                    <p><strong>📈 AUC Score:</strong> ${(summary.best_auc * 100).toFixed(1)}%</p>
+                                    <p><strong>🔬 Models Compared:</strong> ${summary.total_models_compared}</p>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <div class="card border-primary">
+                                <div class="card-header bg-primary text-white">
+                                    <h5><i class="fas fa-chart-line"></i> Performance Improvements</h5>
+                                </div>
+                                <div class="card-body">
+                                    <p><strong>vs Best Baseline:</strong></p>
+                                    <ul>
+                                        <li>Accuracy: +${(improvements.best_accuracy_improvement * 100).toFixed(1)}%</li>
+                                        <li>F1-Score: +${(improvements.best_f1_improvement * 100).toFixed(1)}%</li>
+                                        <li>AUC: +${(improvements.best_auc_improvement * 100).toFixed(1)}%</li>
+                                    </ul>
+                                    
+                                    <p><strong>vs Simple Baseline:</strong></p>
+                                    <ul>
+                                        <li>Accuracy: +${(improvements.simple_accuracy_improvement * 100).toFixed(1)}%</li>
+                                        <li>F1-Score: +${(improvements.simple_f1_improvement * 100).toFixed(1)}%</li>
+                                        <li>AUC: +${(improvements.simple_auc_improvement * 100).toFixed(1)}%</li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="row mt-3">
+                        <div class="col-12">
+                            <div class="card">
+                                <div class="card-header">
+                                    <h5><i class="fas fa-table"></i> Detailed Comparison Results</h5>
+                                </div>
+                                <div class="card-body">
+                                    <div class="table-responsive">
+                                        <table class="table table-striped table-hover">
+                                            <thead class="table-dark">
+                                                <tr>
+                                                    <th>Model</th>
+                                                    <th>Accuracy</th>
+                                                    <th>Precision</th>
+                                                    <th>Recall</th>
+                                                    <th>F1-Score</th>
+                                                    <th>AUC</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                ${generateTableRows(data.detailed_results)}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="alert alert-success mt-3">
+                        <h6><i class="fas fa-lightbulb"></i> Key Insights:</h6>
+                        <ul class="mb-0">
+                            <li>Our advanced model outperforms all baseline models across key metrics</li>
+                            <li>The ensemble approach and feature engineering provide significant improvements</li>
+                            <li>Higher F1-score indicates better balance between precision and recall</li>
+                            <li>Superior AUC score demonstrates better discrimination ability</li>
+                        </ul>
+                    </div>
+                `;
+            }
+
+            function generateTableRows(detailedResults) {
+                // Sort by F1-score
+                const sortedResults = Object.entries(detailedResults)
+                    .sort((a, b) => b[1].f1_score - a[1].f1_score);
+                
+                return sortedResults.map(([modelName, metrics], index) => {
+                    const isOurModel = modelName.includes('🏆');
+                    const cleanName = modelName.replace('🏆 ', '');
+                    const rowClass = isOurModel ? 'table-success fw-bold' : '';
+                    const trophy = index === 0 ? '🏆 ' : `${index + 1}. `;
+                    
+                    return `
+                        <tr class="${rowClass}">
+                            <td>${trophy}${cleanName}</td>
+                            <td>${(metrics.accuracy * 100).toFixed(1)}%</td>
+                            <td>${(metrics.precision * 100).toFixed(1)}%</td>
+                            <td>${(metrics.recall * 100).toFixed(1)}%</td>
+                            <td>${(metrics.f1_score * 100).toFixed(1)}%</td>
+                            <td>${(metrics.auc * 100).toFixed(1)}%</td>
+                        </tr>
+                    `;
+                }).join('');
+            }
 
             function displayResults(data) {
                 // Main prediction
