@@ -395,3 +395,8 @@ print(f"Patient Risk Level: {risk_assessment['risk_level']}")
 - Additional biomarkers and genetic factors
 - Temporal analysis for risk progression
 - Multi-disease prediction capabilities
+
+
+
+
+~f $ jupyter lab

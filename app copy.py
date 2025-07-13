@@ -1,4 +1,3 @@
-import json
 from flask import Flask, render_template, request, jsonify
 import pandas as pd
 import numpy as np
@@ -888,8 +887,8 @@ class AdvancedDiabetesPredictor:
         if not self.is_trained:
             raise ValueError("Advanced model must be trained first. Call advanced_model_training().")
         
-        # print("🔍 Comparing Advanced Model with Baseline Models")
-        # print("=" * 60)
+        print("🔍 Comparing Advanced Model with Baseline Models")
+        print("=" * 60)
         
         # Split data
         X_train, X_test, y_train, y_test = train_test_split(
@@ -924,8 +923,8 @@ class AdvancedDiabetesPredictor:
         # Store results
         comparison_results = {}
         
-        # print("Training and evaluating models...")
-        # print("-" * 60)
+        print("Training and evaluating models...")
+        print("-" * 60)
         
         for name, model in baseline_models.items():
             if name == '🏆 Advanced Model (Ours)':
@@ -987,130 +986,6 @@ class AdvancedDiabetesPredictor:
         advanced_results = comparison_results['🏆 Advanced Model (Ours)']
         improvements = self._calculate_improvements(comparison_results, advanced_results)
         
-        # print("\n📊 PERFORMANCE IMPROVEMENTS SUMMARY")
-        # print("=" * 50)
-        # print(f"🎯 Our Advanced Model vs Best Baseline:")
-        # print(f"   • Accuracy improvement: +{improvements['best_accuracy_improvement']:.1%}")
-        # print(f"   • F1-Score improvement: +{improvements['best_f1_improvement']:.1%}")
-        # print(f"   • AUC improvement: +{improvements['best_auc_improvement']:.1%}")
-        # print(f"\n🔥 Our Advanced Model vs Simple Baseline:")
-        # print(f"   • Accuracy improvement: +{improvements['simple_accuracy_improvement']:.1%}")
-        # print(f"   • F1-Score improvement: +{improvements['simple_f1_improvement']:.1%}")
-        # print(f"   • AUC improvement: +{improvements['simple_auc_improvement']:.1%}")
-        
-        return {
-            'comparison_results': comparison_results,
-            'improvements': improvements,
-            'summary': {
-                'best_model': '🏆 Advanced Model (Ours)',
-                'best_f1_score': advanced_results['f1_score'],
-                'best_auc': advanced_results['auc'],
-                'total_models_compared': len(comparison_results)
-            }
-        }
-
-
-    def compare_with_baseline__models(self, X, y):
-        """
-        Compare the advanced model with baseline models and existing solutions,
-        return performance metrics and trained models.
-        """
-        from sklearn.model_selection import train_test_split, cross_val_score
-        from sklearn.linear_model import LogisticRegression
-        from sklearn.tree import DecisionTreeClassifier
-        from sklearn.naive_bayes import GaussianNB
-        from sklearn.neighbors import KNeighborsClassifier
-        from sklearn.metrics import accuracy_score, f1_score, roc_auc_score, precision_score, recall_score
-        from sklearn.dummy import DummyClassifier
-        from sklearn.ensemble import RandomForestClassifier
-
-        if not self.is_trained:
-            raise ValueError("Advanced model must be trained first. Call advanced_model_training().")
-
-        print("🔍 Comparing Advanced Model with Baseline Models")
-        print("=" * 60)
-
-        X_train, X_test, y_train, y_test = train_test_split(
-            X, y, test_size=0.2, random_state=42, stratify=y
-        )
-
-        X_train_processed = X_train
-        X_test_processed = X_test
-
-        if self.feature_selector is not None:
-            X_train_processed = self.feature_selector.transform(X_train_processed)
-            X_test_processed = self.feature_selector.transform(X_test_processed)
-
-        X_train_scaled = self.scaler.transform(X_train_processed)
-        X_test_scaled = self.scaler.transform(X_test_processed)
-
-        baseline_models = {
-            'Dummy (Most Frequent)': DummyClassifier(strategy='most_frequent'),
-            'Dummy (Stratified)': DummyClassifier(strategy='stratified'),
-            'Simple Logistic Regression': LogisticRegression(random_state=42),
-            'Decision Tree': DecisionTreeClassifier(random_state=42, max_depth=5),
-            'Naive Bayes': GaussianNB(),
-            'K-Nearest Neighbors': KNeighborsClassifier(n_neighbors=5),
-            'Basic Random Forest': RandomForestClassifier(n_estimators=50, random_state=42)
-        }
-
-        baseline_models['🏆 Advanced Model (Ours)'] = self.best_model
-
-        comparison_results = {}
-        trained_models = {}
-
-        print("Training and evaluating models...")
-        print("-" * 60)
-
-        for name, model in baseline_models.items():
-            if name == '🏆 Advanced Model (Ours)':
-                y_pred = model.predict(X_test_scaled)
-                y_pred_proba = model.predict_proba(X_test_scaled)[:, 1]
-            else:
-                model.fit(X_train_scaled, y_train)
-                y_pred = model.predict(X_test_scaled)
-                try:
-                    y_pred_proba = model.predict_proba(X_test_scaled)[:, 1]
-                except AttributeError:
-                    y_pred_proba = y_pred.astype(float)
-
-            trained_models[name] = model
-
-            accuracy = accuracy_score(y_test, y_pred)
-            precision = precision_score(y_test, y_pred, zero_division=0)
-            recall = recall_score(y_test, y_pred, zero_division=0)
-            f1 = f1_score(y_test, y_pred, zero_division=0)
-
-            try:
-                auc = roc_auc_score(y_test, y_pred_proba)
-            except ValueError:
-                auc = 0.5
-
-            try:
-                cv_scores = cross_val_score(model, X_train_scaled, y_train, cv=3, scoring='f1')
-                cv_mean = cv_scores.mean()
-                cv_std = cv_scores.std()
-            except:
-                cv_mean = f1
-                cv_std = 0
-
-            comparison_results[name] = {
-                'accuracy': accuracy,
-                'precision': precision,
-                'recall': recall,
-                'f1_score': f1,
-                'auc': auc,
-                'cv_mean': cv_mean,
-                'cv_std': cv_std
-            }
-
-            print(f"{name:25} | Acc: {accuracy:.3f} | F1: {f1:.3f} | AUC: {auc:.3f}")
-
-        self._create_comparison_plot(comparison_results)
-        self._print_comparison_table(comparison_results)
-        advanced_results = comparison_results['🏆 Advanced Model (Ours)']
-        improvements = self._calculate_improvements(comparison_results, advanced_results)
-
         print("\n📊 PERFORMANCE IMPROVEMENTS SUMMARY")
         print("=" * 50)
         print(f"🎯 Our Advanced Model vs Best Baseline:")
@@ -1121,7 +996,7 @@ class AdvancedDiabetesPredictor:
         print(f"   • Accuracy improvement: +{improvements['simple_accuracy_improvement']:.1%}")
         print(f"   • F1-Score improvement: +{improvements['simple_f1_improvement']:.1%}")
         print(f"   • AUC improvement: +{improvements['simple_auc_improvement']:.1%}")
-
+        
         return {
             'comparison_results': comparison_results,
             'improvements': improvements,
@@ -1130,8 +1005,7 @@ class AdvancedDiabetesPredictor:
                 'best_f1_score': advanced_results['f1_score'],
                 'best_auc': advanced_results['auc'],
                 'total_models_compared': len(comparison_results)
-            },
-            'trained_models': trained_models
+            }
         }
 
 
@@ -1353,7 +1227,6 @@ class AdvancedDiabetesPredictor:
         if not os.path.exists(plot_path):
             raise FileNotFoundError(f"Failed to create plot at {plot_path}")
 
-
 # Global predictor instance
 predictor = None
 model_loaded = False
@@ -1504,6 +1377,69 @@ def predict():
         })
 
 
+# @app.route('/compare_models', methods=['POST'])
+# def compare_models():
+#     """API endpoint for model comparison"""
+#     if not model_loaded:
+#         return jsonify({
+#             'error': 'Model not loaded. Please check server logs.',
+#             'success': False
+#         })
+    
+#     try:
+#         # Generate or load test data for comparison
+#         from sklearn.datasets import make_classification
+        
+#         # Use same synthetic data generation as in training
+#         np.random.seed(42)
+#         X, y = make_classification(
+#             n_samples=1000, n_features=8, n_informative=6, 
+#             n_redundant=2, n_clusters_per_class=1, random_state=42
+#         )
+        
+#         feature_names = [
+#             'pregnancies', 'glucose', 'blood_pressure', 'skin_thickness',
+#             'insulin', 'bmi', 'diabetes_pedigree', 'age'
+#         ]
+        
+#         df = pd.DataFrame(X, columns=feature_names)
+        
+#         # Transform to realistic medical ranges
+#         df['pregnancies'] = (np.abs(df['pregnancies']) * 2 + 1).astype(int)
+#         df['glucose'] = np.abs(df['glucose']) * 30 + 100
+#         df['blood_pressure'] = np.abs(df['blood_pressure']) * 20 + 60
+#         df['skin_thickness'] = np.abs(df['skin_thickness']) * 15 + 15
+#         df['insulin'] = np.abs(df['insulin']) * 100 + 50
+#         df['bmi'] = np.abs(df['bmi']) * 10 + 20
+#         df['diabetes_pedigree'] = np.abs(df['diabetes_pedigree']) * 0.5 + 0.1
+#         df['age'] = (np.abs(df['age']) * 15 + 25).astype(int)
+#         df['target'] = y
+        
+#         # Feature engineering
+#         df_enhanced = predictor.advanced_feature_engineering(df)
+#         X_enhanced = df_enhanced.drop('target', axis=1)
+#         y_enhanced = df_enhanced['target']
+        
+#         # Run comparison
+#         comparison_result = predictor.compare_with_baseline_models(X_enhanced, y_enhanced)
+        
+#         # Format results for JSON response
+#         response_data = {
+#             'success': True,
+#             'timestamp': datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+#             'comparison_summary': comparison_result['summary'],
+#             'improvements': comparison_result['improvements'],
+#             'detailed_results': comparison_result['comparison_results']
+#         }
+        
+#         return jsonify(response_data)
+        
+#     except Exception as e:
+#         return jsonify({
+#             'error': f'Model comparison failed: {str(e)}',
+#             'success': False
+#         })
+
 
 @app.route('/compare_models', methods=['POST'])
 def compare_models():
@@ -1551,7 +1487,8 @@ def compare_models():
         comparison_result = predictor.compare_with_baseline_models(X_enhanced, y_enhanced)
         
         # Check if plot file exists
-        # plot_path = os.path.join('static', 'model_comparison.png')
+        plot_path = os.path.join('static', 'model_comparison.png')
+        plot_url = f'/static/model_comparison.png?t={datetime.now().timestamp()}' if os.path.exists(plot_path) else None
         
         # Format results for JSON response
         response_data = {
@@ -1560,6 +1497,7 @@ def compare_models():
             'comparison_summary': comparison_result['summary'],
             'improvements': comparison_result['improvements'],
             'detailed_results': comparison_result['comparison_results'],
+            'plot_path': plot_url  # Include plot path only if file exists
         }
         
         return jsonify(response_data)
@@ -1584,201 +1522,17 @@ def about():
     """About page with information about the system"""
     return render_template('about.html')
 
-
-
-def compare_models_infor():
-    """API endpoint for model comparison"""
-    if not model_loaded:
-        return jsonify({
-            'error': 'Model not loaded. Please check server logs.',
-            'success': False
-        })
-    
-    try:
-        # Generate or load test data for comparison
-        from sklearn.datasets import make_classification
-        
-        np.random.seed(42)
-        X, y = make_classification(
-            n_samples=1000, n_features=8, n_informative=6, 
-            n_redundant=2, n_clusters_per_class=1, random_state=42
-        )
-        
-        feature_names = [
-            'pregnancies', 'glucose', 'blood_pressure', 'skin_thickness',
-            'insulin', 'bmi', 'diabetes_pedigree', 'age'
-        ]
-        
-        df = pd.DataFrame(X, columns=feature_names)
-        
-        # # Transform to realistic medical ranges
-        # df['pregnancies'] = (np.abs(df['pregnancies']) * 2 + 1).astype(int)
-        # df['glucose'] = np.abs(df['glucose']) * 30 + 100
-        # df['blood_pressure'] = np.abs(df['blood_pressure']) * 20 + 60
-        # df['skin_thickness'] = np.abs(df['skin_thickness']) * 15 + 15
-        # df['insulin'] = np.abs(df['insulin']) * 100 + 50
-        # df['bmi'] = np.abs(df['bmi']) * 10 + 20
-        # df['diabetes_pedigree'] = np.abs(df['diabetes_pedigree']) * 0.5 + 0.1
-        # df['age'] = (np.abs(df['age']) * 15 + 25).astype(int)
-        # df['target'] = y
-
-        # print("++++"*20)
-        # print(df)
-        # print("----"*10)
-        
-        # # Feature engineering
-        # df_enhanced = predictor.advanced_feature_engineering(df)
-        # Apply transformations only to the first 5 rows
-        df_subset = df.head(5).copy()
-
-        df_subset['pregnancies'] = (np.abs(df_subset['pregnancies']) * 2 + 1).astype(int)
-        df_subset['glucose'] = np.abs(df_subset['glucose']) * 30 + 100
-        df_subset['blood_pressure'] = np.abs(df_subset['blood_pressure']) * 20 + 60
-        df_subset['skin_thickness'] = np.abs(df_subset['skin_thickness']) * 15 + 15
-        df_subset['insulin'] = np.abs(df_subset['insulin']) * 100 + 50
-        df_subset['bmi'] = np.abs(df_subset['bmi']) * 10 + 20
-        df_subset['diabetes_pedigree'] = np.abs(df_subset['diabetes_pedigree']) * 0.5 + 0.1
-        df_subset['age'] = (np.abs(df_subset['age']) * 15 + 25).astype(int)
-        df_subset['target'] = y[:5]  # Assuming `y` is aligned
-
-        print("++++" * 20)
-        print(df_subset)
-        print("----" * 10)
-
-        # Feature engineering
-        df_enhanced = predictor.advanced_feature_engineering(df_subset)
-
-        X_enhanced = df_enhanced.drop('target', axis=1)
-        y_enhanced = df_enhanced['target']
-        
-        # Run comparison
-        comparison_result = predictor.compare_with_baseline_models(X_enhanced, y_enhanced)
-        
-        # Check if plot file exists
-        plot_path = os.path.join('static', 'model_comparison_7.png')
-        
-        # Format results for JSON response
-        response_data = {
-            'success': True,
-            'timestamp': datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-            'comparison_summary': comparison_result['summary'],
-            'improvements': comparison_result['improvements'],
-            'detailed_results': comparison_result['comparison_results'],
-        }
-
-
-        return response_data
-
-
-    except:
-
-
-        return {}
-    
-
-def compare_models_infor_new():
-    """API endpoint for model comparison"""
-    if not model_loaded:
-        return jsonify({
-            'error': 'Model not loaded. Please check server logs.',
-            'success': False
-        })
-    
-    try:
-        from sklearn.datasets import make_classification
-        import numpy as np
-        import pandas as pd
-        import os
-        from datetime import datetime
-
-        np.random.seed(42)
-        
-        # Generate test data
-        X, y = make_classification(
-            n_samples=1000, n_features=8, n_informative=6, 
-            n_redundant=2, n_clusters_per_class=1, random_state=42
-        )
-        
-        feature_names = [
-            'pregnancies', 'glucose', 'blood_pressure', 'skin_thickness',
-            'insulin', 'bmi', 'diabetes_pedigree', 'age'
-        ]
-        
-        df = pd.DataFrame(X, columns=feature_names)
-        
-        # Transform to realistic ranges
-        df['pregnancies'] = (np.abs(df['pregnancies']) * 2 + 1).astype(int)
-        df['glucose'] = np.abs(df['glucose']) * 30 + 100
-        df['blood_pressure'] = np.abs(df['blood_pressure']) * 20 + 60
-        df['skin_thickness'] = np.abs(df['skin_thickness']) * 15 + 15
-        df['insulin'] = np.abs(df['insulin']) * 100 + 50
-        df['bmi'] = np.abs(df['bmi']) * 10 + 20
-        df['diabetes_pedigree'] = np.abs(df['diabetes_pedigree']) * 0.5 + 0.1
-        df['age'] = (np.abs(df['age']) * 15 + 25).astype(int)
-        df['target'] = y
-
-        
-        # Feature engineering
-        df_enhanced = predictor.advanced_feature_engineering(df)
-        X_enhanced = df_enhanced.drop('target', axis=1)
-        y_enhanced = df_enhanced['target']
-        
-        # Run comparison with trained models returned
-        comparison_result = predictor.compare_with_baseline_models(X_enhanced, y_enhanced)
-
-        trained_models = comparison_result.get('trained_models', {})
-        
-        # Collect predictions for first 5 samples
-        sample_inputs = X_enhanced.head(5)
-        sample_predictions = {}
-
-        print("\n🔍 Individual Predictions on First 5 Samples:\n")
-        
-        for idx, (_, row) in enumerate(sample_inputs.iterrows()):
-            sample_key = f"Sample_{idx + 1}"
-            sample_predictions[sample_key] = {}
-            features = row.values.reshape(1, -1)
-            
-            print(f"\n--- Sample {idx + 1} ---")
-            
-            for model_name, model in trained_models.items():
-                pred = model.predict(features)[0]
-                print(f"{model_name}: Prediction = {pred}")
-                
-                # Add to JSON response
-                sample_predictions[sample_key][model_name] = int(pred)
-
-        # Check if plot file exists
-        # plot_path = os.path.join('static', 'model_comparison_7.png')
-        
-        response_data = {
-            'success': True,
-            'timestamp': datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-            'comparison_summary': comparison_result['summary'],
-            'improvements': comparison_result['improvements'],
-            'detailed_results': comparison_result['comparison_results'],
-            'sample_predictions': sample_predictions
-        }
-        
-        return response_data
-
-    except Exception as e:
-        print(f"Error during model comparison: {e}")
-        return jsonify({
-            'error': str(e),
-            'success': False
-        })
-
-
+# Initialize model when app starts
+# @app.before_first_request
+# def initialize():
+#     """Initialize the model before handling first request"""
+#     success = load_or_train_model()
+#     if not success:
+#         print("⚠️  Warning: Model initialization failed. App may not work properly.")
 
 if __name__ == '__main__':
     # Try to initialize model
     load_or_train_model()
-
-
-    # print(json.dumps(compare_models_infor().get('detailed_results',{})))
-
-
     
     # Run the Flask app
     print("\n🚀 Starting Flask Diabetes Prediction App...")
